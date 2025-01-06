@@ -72,11 +72,11 @@ if __name__ == '__main__':
     parser.add_argument('--host', type=str, default='localhost', help="The server address")
     parser.add_argument('--port', type=int, default=50051, help="The server port number")
     parser.add_argument('--ca-cert', type=str, help="Path to the server's CA certificate (only for TLS/mTLS)")
-    parser.add_argument('--cert', type=str, help="Path to the client certificate (only for mTLS)")
-    parser.add_argument('--key', type=str, help="Path to the client private key (only for mTLS)")
+    parser.add_argument('--client-cert', type=str, help="Path to the client certificate (only for mTLS)")
+    parser.add_argument('--client-key', type=str, help="Path to the client private key (only for mTLS)")
     parser.add_argument('--tls', action='store_true', help="Use TLS for the connection")
     parser.add_argument('--m-tls', action='store_true', help="Use mTLS for the connection")
     args = parser.parse_args()
 
     # Start the client with the provided host, port number, CA certificate, and TLS/mTLS enabling
-    run(args.host, args.port, ca_cert=args.ca_cert, cert_file=args.cert, key_file=args.key, tls_enabled=args.tls, m_tls_enabled=args.m_tls)
+    run(args.host, args.port, ca_cert=args.ca_cert, cert_file=args.client_cert, key_file=args.client_key, tls_enabled=args.tls, m_tls_enabled=args.m_tls)

@@ -28,10 +28,13 @@ def serve(cert_file=None, key_file=None, ca_cert=None, port=50051, tls_enabled=F
         if cert_file and key_file:
             if m_tls_enabled and ca_cert:
                 # mTLS configuration: the server verifies the client with the CA certificate
+                with open(ca_cert, 'rb') as f:
+                    ca_cert_data = f.read()
+
                 server_credentials = grpc.ssl_server_credentials(
                     [(open(key_file, 'rb').read(), open(cert_file, 'rb').read())],
-                    root_certificates=open(ca_cert, 'rb').read(),
-                    require_client_cert=True
+                    root_certificates=ca_cert_data,
+                    require_client_auth=True  # Correct argument for enforcing client authentication
                 )
             else:
                 server_credentials = grpc.ssl_server_credentials(
@@ -50,7 +53,7 @@ def serve(cert_file=None, key_file=None, ca_cert=None, port=50051, tls_enabled=F
     server.start()
     try:
         while True:
-            time.sleep(86400) # Keep the server running
+            time.sleep(86400)  # Keep the server running
     except KeyboardInterrupt:
         server.stop(0)
 
