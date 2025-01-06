@@ -15,18 +15,27 @@ def log_message(message):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"{timestamp} - {message}")
 
-def run(host, port, ca_cert=None, tls_enabled=False):
+def run(host, port, ca_cert=None, cert_file=None, key_file=None, tls_enabled=False, m_tls_enabled=False):
     # Choose a random name for the client (this remains constant)
     client_id = random.choice(client_names)  # Choose a random name
     log_message(f"Client started with name: {client_id}")
 
     while True:
         try:
-            # TLS configuration, only if tls_enabled is True
+            # TLS or mTLS configuration, depending on the settings
             if tls_enabled:
-                credentials = grpc.ssl_channel_credentials(
-                    root_certificates=open(ca_cert, 'rb').read()  # The CA certificate for server verification
-                )
+                if m_tls_enabled:
+                    # mTLS configuration: the client uses both a certificate and a private key
+                    credentials = grpc.ssl_channel_credentials(
+                        root_certificates=open(ca_cert, 'rb').read(),
+                        private_key=open(key_file, 'rb').read(),
+                        certificate_chain=open(cert_file, 'rb').read()
+                    )
+                else:
+                    # TLS: the client verifies with the CA-certificate
+                    credentials = grpc.ssl_channel_credentials(
+                        root_certificates=open(ca_cert, 'rb').read()
+                    )
                 channel = grpc.secure_channel(f'{host}:{port}', credentials)
             else:
                 # Insecure connection
@@ -62,9 +71,12 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Start the gRPC client and connect to the server on a given host and port")
     parser.add_argument('--host', type=str, default='localhost', help="The server address")
     parser.add_argument('--port', type=int, default=50051, help="The server port number")
-    parser.add_argument('--ca-cert', type=str, help="Path to the server's CA certificate (only for TLS)")
+    parser.add_argument('--ca-cert', type=str, help="Path to the server's CA certificate (only for TLS/mTLS)")
+    parser.add_argument('--cert', type=str, help="Path to the client certificate (only for mTLS)")
+    parser.add_argument('--key', type=str, help="Path to the client private key (only for mTLS)")
     parser.add_argument('--tls', action='store_true', help="Use TLS for the connection")
+    parser.add_argument('--m-tls', action='store_true', help="Use mTLS for the connection")
     args = parser.parse_args()
 
-    # Start the client with the provided host, port number, CA certificate, and TLS enabling
-    run(args.host, args.port, ca_cert=args.ca_cert, tls_enabled=args.tls)
+    # Start the client with the provided host, port number, CA certificate, and TLS/mTLS enabling
+    run(args.host, args.port, ca_cert=args.ca_cert, cert_file=args.cert, key_file=args.key, tls_enabled=args.tls, m_tls_enabled=args.m_tls)

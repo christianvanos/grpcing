@@ -20,16 +20,23 @@ def log_message(message):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     print(f"{timestamp} - {message}")
 
-def serve(cert_file=None, key_file=None, port=50051, tls_enabled=False):
+def serve(cert_file=None, key_file=None, ca_cert=None, port=50051, tls_enabled=False, m_tls_enabled=False):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     numbers_pb2_grpc.add_NumberServiceServicer_to_server(NumberServiceServicer(), server)
 
     if tls_enabled:
-        # TLS configuration
         if cert_file and key_file:
-            server_credentials = grpc.ssl_server_credentials(
-                [(open(key_file, 'rb').read(), open(cert_file, 'rb').read())]
-            )
+            if m_tls_enabled and ca_cert:
+                # mTLS configuration: the server verifies the client with the CA certificate
+                server_credentials = grpc.ssl_server_credentials(
+                    [(open(key_file, 'rb').read(), open(cert_file, 'rb').read())],
+                    root_certificates=open(ca_cert, 'rb').read(),
+                    require_client_cert=True
+                )
+            else:
+                server_credentials = grpc.ssl_server_credentials(
+                    [(open(key_file, 'rb').read(), open(cert_file, 'rb').read())]
+                )
             server.add_secure_port(f'[::]:{port}', server_credentials)
             log_message(f"Server started on port {port} with TLS...")
         else:
@@ -43,7 +50,7 @@ def serve(cert_file=None, key_file=None, port=50051, tls_enabled=False):
     server.start()
     try:
         while True:
-            time.sleep(86400)  # Keep the server running
+            time.sleep(86400) # Keep the server running
     except KeyboardInterrupt:
         server.stop(0)
 
@@ -52,9 +59,11 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Start the gRPC server on a given port")
     parser.add_argument('--cert', type=str, help="Path to the server certificate (only for TLS)")
     parser.add_argument('--key', type=str, help="Path to the server private key (only for TLS)")
+    parser.add_argument('--ca-cert', type=str, help="Path to the server's CA certificate (only for mTLS)")
     parser.add_argument('--port', type=int, default=50051, help="Port number for the server to run on")
     parser.add_argument('--tls', action='store_true', help="Use TLS for the connection")
+    parser.add_argument('--m-tls', action='store_true', help="Use mTLS for the connection")
     args = parser.parse_args()
 
-    # Start the server with the provided port number, certificate, and TLS enabling
-    serve(cert_file=args.cert, key_file=args.key, port=args.port, tls_enabled=args.tls)
+    # Start the server with the provided port number, certificate, and TLS/mTLS enabling
+    serve(cert_file=args.cert, key_file=args.key, ca_cert=args.ca_cert, port=args.port, tls_enabled=args.tls, m_tls_enabled=args.m_tls)
