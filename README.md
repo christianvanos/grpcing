@@ -1,4 +1,3 @@
-```markdown
 # gRPC Server and Client with TLS and mTLS Support
 
 This project implements a gRPC server and client that supports **insecure**, **TLS**, and **mTLS** (mutual TLS) connections. The server provides a simple service that returns a random number when a client sends a request.
