@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+service NumberService {
+  rpc SendNumber (NumberRequest) returns (NumberResponse);
+}
+
+message NumberRequest {
+  int32 number = 1;
+  string client_id = 2;
+}
+
+message NumberResponse {
+  int32 number = 1;
+  string client_id = 2;
+}
